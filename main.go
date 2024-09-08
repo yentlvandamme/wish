@@ -29,21 +29,73 @@ func main () {
 	viper.ReadInConfig()
 	apiKey := viper.GetString("api_key")
 
+	var llmHandler LLMHandler
+	geminiHandler, err := NewGeminiHandler(apiKey)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	llmHandler = geminiHandler
+	parts, err := llmHandler.Ask(prompt)
+	if err != nil {
+		fmt.Println(err)
+	}
+	
+	for _, part := range parts {
+		fmt.Println(part)
+	}
+}
+
+type LLMHandler interface {
+	Ask(prompt string) ([]string, error)
+}
+
+type GeminiHandler struct {
+	apiKey string
+	context context.Context
+	client *genai.Client
+	model *genai.GenerativeModel
+}
+
+func  NewGeminiHandler(apiKey string) (*GeminiHandler, error) {
 	ctx := context.Background()
 	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer client.Close()
 	
-	model := client.GenerativeModel("gemini-1.5-flash")
-
-	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Could not create Gemini client")
+		return nil, err
 	}
 
-	printResponse(resp)	
+	return &GeminiHandler{
+		apiKey: apiKey,
+		context: ctx,
+		client: client,
+		model: client.GenerativeModel("gemini-1.5-flash"),
+	}, nil
+}
+
+func (handler GeminiHandler) Ask(prompt string) ([]string, error) {
+	generatedContent, err := handler.model.GenerateContent(handler.context, genai.Text(prompt))
+	responseParts := make([]string, 0)
+
+	if err != nil {
+		fmt.Println("Error getting the response")
+		return responseParts, err
+	}
+
+	for _, candidate := range generatedContent.Candidates {
+		if candidate.Content != nil {
+			for _, part := range candidate.Content.Parts {
+				if txt, ok := part.(genai.Text); ok {
+					responseParts = append(responseParts, string(txt))
+				} else {
+					fmt.Println("Generated content is not of type genai.Text")
+				}
+			}
+		}
+	}
+
+	return responseParts, nil
 }
 
 func createConfigIfNotExist() {
@@ -65,15 +117,4 @@ func createConfigIfNotExist() {
 			fmt.Println(err)
 		}
 	}
-}
-
-func printResponse(resp *genai.GenerateContentResponse) {
-	for _, cand := range resp.Candidates {
-		if cand.Content != nil {
-			for _, part := range cand.Content.Parts {
-				fmt.Println(part)
-			}
-		}
-	}
-	fmt.Println("---")
 }
