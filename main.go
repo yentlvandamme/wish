@@ -12,7 +12,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-func main () {
+func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Pass a string value to act as your prompt")
 		os.Exit(1)
@@ -40,7 +40,7 @@ func main () {
 	if err != nil {
 		fmt.Println(err)
 	}
-	
+
 	for _, part := range parts {
 		fmt.Println(part)
 	}
@@ -51,26 +51,26 @@ type LLMHandler interface {
 }
 
 type GeminiHandler struct {
-	apiKey string
+	apiKey  string
 	context context.Context
-	client *genai.Client
-	model *genai.GenerativeModel
+	client  *genai.Client
+	model   *genai.GenerativeModel
 }
 
-func  NewGeminiHandler(apiKey string) (*GeminiHandler, error) {
+func NewGeminiHandler(apiKey string) (*GeminiHandler, error) {
 	ctx := context.Background()
 	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
-	
+
 	if err != nil {
 		fmt.Println("Could not create Gemini client")
 		return nil, err
 	}
 
 	return &GeminiHandler{
-		apiKey: apiKey,
+		apiKey:  apiKey,
 		context: ctx,
-		client: client,
-		model: client.GenerativeModel("gemini-1.5-flash"),
+		client:  client,
+		model:   client.GenerativeModel("gemini-1.5-flash"),
 	}, nil
 }
 
@@ -111,7 +111,7 @@ func createConfigIfNotExist() {
 		if err != nil {
 			fmt.Println("Invalid input", err)
 		}
-		
+
 		viper.Set("api_key", strings.TrimSpace(apiKey))
 		if err := viper.WriteConfig(); err != nil {
 			fmt.Println(err)
