@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/glamour"
 	"github.com/google/generative-ai-go/genai"
 	"github.com/spf13/viper"
 	"google.golang.org/api/option"
@@ -42,7 +43,12 @@ func main() {
 	}
 
 	for _, part := range parts {
-		fmt.Println(part)
+		out, err := glamour.Render(part, "dark")
+
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Print(out)
 	}
 }
 
